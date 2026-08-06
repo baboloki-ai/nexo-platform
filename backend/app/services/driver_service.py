@@ -8,9 +8,60 @@ from app.models.ride_offer import RideOffer
 from app.models.ride_request import RideRequest
 from app.models.user import User
 from app.services.dispatch_service import DispatchService
+from app.services.notification_service import NotificationService
 
 
 class DriverService:
+
+    @staticmethod
+    def update_location(
+        db: Session,
+        driver: User,
+        latitude: float,
+        longitude: float,
+    ) -> User:
+        """
+        Updates the driver's current GPS coordinates.
+
+        If the driver has an active ride,
+        broadcast the live location to the passenger.
+        """
+
+        driver.current_latitude = latitude
+        driver.current_longitude = longitude
+        driver.last_seen = datetime.utcnow()
+
+        db.commit()
+        db.refresh(driver)
+
+        # ------------------------------------------
+        # Find driver's active ride
+        # ------------------------------------------
+
+        active_ride = (
+            db.query(RideRequest)
+            .filter(
+                RideRequest.accepted_driver_id == driver.id,
+                RideRequest.status.in_([
+                    RideStatus.ACCEPTED,
+                    RideStatus.DRIVER_ARRIVING,
+                    RideStatus.DRIVER_ARRIVED,
+                    RideStatus.IN_PROGRESS,
+                ])
+            )
+            .first()
+        )
+
+        if active_ride:
+
+            NotificationService.send_driver_location(
+                passenger_id=active_ride.passenger_id,
+                driver_id=driver.id,
+                latitude=driver.current_latitude,
+                longitude=driver.current_longitude,
+            )
+
+        return driver
 
     @staticmethod
     def accept_ride(
@@ -73,7 +124,6 @@ class DriverService:
         if ride is None:
             return None
 
-        # Make this driver available again
         driver = (
             db.query(User)
             .filter(User.id == driver_id)
@@ -97,13 +147,11 @@ class DriverService:
             offer.status = RideOfferStatus.REJECTED
             offer.responded_at = datetime.utcnow()
 
-        # Remove the current driver
         ride.accepted_driver_id = None
         ride.status = RideStatus.PENDING
 
         db.commit()
 
-        # Try another driver immediately
         ride = DispatchService.assign_driver(
             db=db,
             ride=ride

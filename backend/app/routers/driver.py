@@ -9,6 +9,7 @@ from app.schemas.driver import (
     DriverLocationUpdate,
     DriverStatusResponse,
 )
+from app.services.gps_service import GPSService
 from app.utils.dependencies import get_current_user
 
 router = APIRouter(
@@ -81,15 +82,15 @@ def update_location(
             detail="Only drivers can update their location.",
         )
 
-    current_user.current_latitude = location.latitude
-    current_user.current_longitude = location.longitude
-    current_user.last_seen = datetime.utcnow()
-
-    db.commit()
-    db.refresh(current_user)
+    driver = GPSService.update_driver_location(
+        db=db,
+        driver=current_user,
+        latitude=location.latitude,
+        longitude=location.longitude,
+    )
 
     return {
         "message": "Location updated successfully.",
-        "latitude": current_user.current_latitude,
-        "longitude": current_user.current_longitude,
+        "latitude": driver.current_latitude,
+        "longitude": driver.current_longitude,
     }

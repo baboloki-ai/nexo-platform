@@ -14,7 +14,7 @@ class NotificationService:
     This service is the ONLY layer allowed to communicate with the
     ConnectionManager.
 
-    DispatchService, RideService, etc. should call this service only.
+    DispatchService, RideService, GPSService, etc. should call this service only.
     """
 
     _event_loop: asyncio.AbstractEventLoop | None = None
@@ -22,7 +22,7 @@ class NotificationService:
     @classmethod
     def bind_event_loop(
         cls,
-        loop: asyncio.AbstractEventLoop
+        loop: asyncio.AbstractEventLoop,
     ) -> None:
         cls._event_loop = loop
 
@@ -33,7 +33,7 @@ class NotificationService:
     @classmethod
     def _schedule(
         cls,
-        coro: Coroutine[Any, Any, None]
+        coro: Coroutine[Any, Any, None],
     ) -> None:
 
         print("\n========== NOTIFICATION ==========")
@@ -50,7 +50,6 @@ class NotificationService:
             return
 
         except RuntimeError:
-
             print("⚠ No running event loop.")
 
         if cls._event_loop is not None:
@@ -61,7 +60,7 @@ class NotificationService:
 
                 asyncio.run_coroutine_threadsafe(
                     coro,
-                    cls._event_loop
+                    cls._event_loop,
                 )
 
                 print("✅ Coroutine submitted.")
@@ -77,7 +76,7 @@ class NotificationService:
     async def _send(
         recipient: Recipient,
         entity_id: int,
-        message: dict
+        message: dict,
     ) -> None:
 
         print("\n========== NOTIFICATION ==========")
@@ -92,7 +91,7 @@ class NotificationService:
 
             await manager.send_to_driver(
                 entity_id,
-                message
+                message,
             )
 
             print("✅ Driver send completed.")
@@ -103,7 +102,7 @@ class NotificationService:
 
         await manager.send_to_passenger(
             entity_id,
-            message
+            message,
         )
 
         print("✅ Passenger send completed.")
@@ -115,7 +114,7 @@ class NotificationService:
         ride_id: int,
         pickup: str,
         destination: str,
-        fare: float
+        fare: float,
     ) -> None:
 
         print("\n========== RIDE OFFER ==========")
@@ -144,7 +143,7 @@ class NotificationService:
     @staticmethod
     def notify_driver(
         driver_id: int,
-        message: str
+        message: str,
     ) -> None:
 
         print(f"Driver notification -> {driver_id}")
@@ -163,7 +162,7 @@ class NotificationService:
     @staticmethod
     def notify_passenger(
         passenger_id: int,
-        message: str
+        message: str,
     ) -> None:
 
         print(f"Passenger notification -> {passenger_id}")
@@ -175,6 +174,37 @@ class NotificationService:
                 {
                     "event": "notification",
                     "message": message,
+                },
+            )
+        )
+
+    @staticmethod
+    def send_driver_location(
+        passenger_id: int,
+        driver_id: int,
+        latitude: float,
+        longitude: float,
+    ) -> None:
+        """
+        Sends the driver's live GPS coordinates to the passenger.
+        """
+
+        print("\n========== DRIVER LOCATION ==========")
+        print(f"Passenger : {passenger_id}")
+        print(f"Driver    : {driver_id}")
+        print(f"Latitude  : {latitude}")
+        print(f"Longitude : {longitude}")
+        print("=====================================\n")
+
+        NotificationService._schedule(
+            NotificationService._send(
+                "passenger",
+                passenger_id,
+                {
+                    "event": "driver_location",
+                    "driver_id": driver_id,
+                    "latitude": latitude,
+                    "longitude": longitude,
                 },
             )
         )
