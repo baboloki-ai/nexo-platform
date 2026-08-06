@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.services.driver_service import DriverService
+
 from app.database.dependencies import get_db
 from app.models.user import User
 from app.schemas.ride_request import (
     RideRequestCreate,
     RideRequestResponse,
 )
+from app.services.driver_service import DriverService
 from app.services.ride_service import RideService
 from app.utils.dependencies import get_current_user
-from fastapi import APIRouter, Depends, HTTPException
+
 router = APIRouter(
     prefix="/rides",
     tags=["Ride Requests"]
@@ -26,7 +27,11 @@ def create_ride_request(
         db=db,
         current_user=current_user,
         pickup_location=ride.pickup_location,
+        pickup_latitude=ride.pickup_latitude,
+        pickup_longitude=ride.pickup_longitude,
         destination=ride.destination,
+        destination_latitude=ride.destination_latitude,
+        destination_longitude=ride.destination_longitude,
         proposed_fare=ride.proposed_fare
     )
 
@@ -61,6 +66,8 @@ def accept_ride(
         ride_id=ride_id,
         current_user=current_user
     )
+
+
 @router.put("/{ride_id}/reject")
 def reject_ride(
     ride_id: int,
@@ -84,6 +91,7 @@ def reject_ride(
         "ride": ride
     }
 
+
 @router.put("/{ride_id}/arrive", response_model=RideRequestResponse)
 def arrive_at_pickup(
     ride_id: int,
@@ -95,6 +103,8 @@ def arrive_at_pickup(
         ride_id=ride_id,
         current_user=current_user
     )
+
+
 @router.put(
     "/{ride_id}/driver-arrived",
     response_model=RideRequestResponse
@@ -109,6 +119,7 @@ def driver_arrived(
         ride_id=ride_id,
         current_user=current_user
     )
+
 
 @router.put("/{ride_id}/start", response_model=RideRequestResponse)
 def start_ride(

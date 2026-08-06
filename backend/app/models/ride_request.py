@@ -1,6 +1,13 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Float,
+    ForeignKey,
+    DateTime,
+)
 from sqlalchemy.orm import relationship
 
 from app.database.base import Base
@@ -74,12 +81,13 @@ class RideRequest(Base):
     )
 
     accepted_driver = relationship(
-    "User",
-    back_populates="accepted_rides",
-    foreign_keys=[accepted_driver_id]
-)
-offers = relationship(
-    "RideOffer",
-    back_populates="ride",
-    cascade="all, delete-orphan"
-)
+        "User",
+        back_populates="accepted_rides",
+        foreign_keys=[accepted_driver_id]
+    )
+
+    offers = relationship(
+        "RideOffer",
+        back_populates="ride",
+        cascade="all, delete-orphan"
+    )

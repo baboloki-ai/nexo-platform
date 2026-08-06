@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float
-from sqlalchemy.orm import relationship
 from datetime import datetime
+
+from sqlalchemy import Column, DateTime, Float, Integer, String
+from sqlalchemy.orm import relationship
 
 from app.database.base import Base
 
@@ -24,6 +25,9 @@ class User(Base):
     current_longitude = Column(Float, nullable=True)
     last_seen = Column(DateTime, nullable=True)
 
+    # ==========================
+    # Relationships
+    # ==========================
     vehicles = relationship(
         "Vehicle",
         back_populates="driver",
@@ -37,11 +41,12 @@ class User(Base):
     )
 
     accepted_rides = relationship(
-    "RideRequest",
-    back_populates="accepted_driver",
-    foreign_keys="RideRequest.accepted_driver_id"
-)
-ride_offers = relationship(
-    "RideOffer",
-    back_populates="driver"
-)
+        "RideRequest",
+        back_populates="accepted_driver",
+        foreign_keys="RideRequest.accepted_driver_id"
+    )
+
+    ride_offers = relationship(
+        "RideOffer",
+        back_populates="driver"
+    )

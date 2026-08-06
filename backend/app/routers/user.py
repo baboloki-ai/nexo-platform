@@ -44,11 +44,15 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
+    print("========== LOGIN START ==========")
+
     user = (
         db.query(User)
         .filter(User.email == form_data.username)
         .first()
     )
+
+    print("User:", user)
 
     if user is None:
         raise HTTPException(
@@ -56,14 +60,20 @@ def login(
             detail="User not found."
         )
 
-    if not verify_password(
+    password_ok = verify_password(
         form_data.password,
         user.password
-    ):
+    )
+
+    print("Password OK:", password_ok)
+
+    if not password_ok:
         raise HTTPException(
             status_code=401,
             detail="Incorrect password."
         )
+
+    print("Creating JWT...")
 
     access_token = create_access_token(
         data={
@@ -72,6 +82,8 @@ def login(
             "role": user.role
         }
     )
+
+    print("JWT created successfully")
 
     return {
         "access_token": access_token,

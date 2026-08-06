@@ -7,6 +7,10 @@ router = APIRouter(
 )
 
 
+# ==========================================================
+# Driver WebSocket
+# ==========================================================
+
 @router.websocket("/ws/driver/{driver_id}")
 async def driver_socket(
     websocket: WebSocket,
@@ -17,14 +21,30 @@ async def driver_socket(
         websocket
     )
 
+    await manager.send_to_driver(
+        driver_id,
+        {
+            "event": "connected",
+            "message": "Driver connected successfully."
+        }
+    )
+
     try:
         while True:
-            # Keep the connection alive
-            await websocket.receive_text()
+            data = await websocket.receive_text()
+
+            print(
+                f"📨 Driver {driver_id}: {data}"
+            )
 
     except WebSocketDisconnect:
+
         manager.disconnect_driver(driver_id)
 
+
+# ==========================================================
+# Passenger WebSocket
+# ==========================================================
 
 @router.websocket("/ws/passenger/{passenger_id}")
 async def passenger_socket(
@@ -36,10 +56,22 @@ async def passenger_socket(
         websocket
     )
 
+    await manager.send_to_passenger(
+        passenger_id,
+        {
+            "event": "connected",
+            "message": "Passenger connected successfully."
+        }
+    )
+
     try:
         while True:
-            # Keep the connection alive
-            await websocket.receive_text()
+            data = await websocket.receive_text()
+
+            print(
+                f"📨 Passenger {passenger_id}: {data}"
+            )
 
     except WebSocketDisconnect:
+
         manager.disconnect_passenger(passenger_id)

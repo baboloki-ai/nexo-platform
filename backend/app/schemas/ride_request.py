@@ -20,12 +20,12 @@ class RideRequestResponse(BaseModel):
     passenger_id: int
 
     pickup_location: str
-    pickup_latitude: float
-    pickup_longitude: float
+    pickup_latitude: float | None = None
+    pickup_longitude: float | None = None
 
     destination: str
-    destination_latitude: float
-    destination_longitude: float
+    destination_latitude: float | None = None
+    destination_longitude: float | None = None
 
     proposed_fare: float
     status: str

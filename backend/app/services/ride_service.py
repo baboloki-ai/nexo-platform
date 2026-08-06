@@ -1,10 +1,12 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
+
 from app.constants.ride_status import RideStatus
 from app.models.passenger import Passenger
 from app.models.ride_request import RideRequest
 from app.models.user import User
 from app.services.dispatch_service import DispatchService
+from app.services.notification_service import NotificationService
 
 
 class RideService:
@@ -14,7 +16,11 @@ class RideService:
         db: Session,
         current_user: User,
         pickup_location: str,
+        pickup_latitude: float,
+        pickup_longitude: float,
         destination: str,
+        destination_latitude: float,
+        destination_longitude: float,
         proposed_fare: float
     ):
         passenger = db.query(Passenger).filter(
@@ -30,13 +36,13 @@ class RideService:
         active_ride = db.query(RideRequest).filter(
             RideRequest.passenger_id == passenger.id,
             RideRequest.status.in_([
-    RideStatus.PENDING,
-    RideStatus.PENDING_DRIVER_ACCEPTANCE,
-    RideStatus.ACCEPTED,
-    RideStatus.DRIVER_ARRIVING,
-    RideStatus.DRIVER_ARRIVED,
-    RideStatus.IN_PROGRESS,
-])
+                RideStatus.PENDING,
+                RideStatus.PENDING_DRIVER_ACCEPTANCE,
+                RideStatus.ACCEPTED,
+                RideStatus.DRIVER_ARRIVING,
+                RideStatus.DRIVER_ARRIVED,
+                RideStatus.IN_PROGRESS,
+            ])
         ).first()
 
         if active_ride:
@@ -48,7 +54,11 @@ class RideService:
         ride = RideRequest(
             passenger_id=passenger.id,
             pickup_location=pickup_location,
+            pickup_latitude=pickup_latitude,
+            pickup_longitude=pickup_longitude,
             destination=destination,
+            destination_latitude=destination_latitude,
+            destination_longitude=destination_longitude,
             proposed_fare=proposed_fare,
             status=RideStatus.PENDING
         )
@@ -57,7 +67,6 @@ class RideService:
         db.commit()
         db.refresh(ride)
 
-        # Automatically attempt to assign a driver.
         ride = DispatchService.assign_driver(
             db=db,
             ride=ride
@@ -68,7 +77,7 @@ class RideService:
     @staticmethod
     def get_available_rides(db: Session):
         return db.query(RideRequest).filter(
-            RideRequest.status == "pending"
+            RideRequest.status == RideStatus.PENDING
         ).all()
 
     @staticmethod
@@ -121,6 +130,11 @@ class RideService:
         db.commit()
         db.refresh(ride)
 
+        NotificationService.notify_passenger(
+            ride.passenger_id,
+            "Your driver has accepted the ride."
+        )
+
         return ride
 
     @staticmethod
@@ -155,6 +169,11 @@ class RideService:
 
         db.commit()
         db.refresh(ride)
+
+        NotificationService.notify_passenger(
+            ride.passenger_id,
+            "Your driver has arrived at the pickup location."
+        )
 
         return ride
 
@@ -223,7 +242,6 @@ class RideService:
 
         ride.status = RideStatus.COMPLETED
 
-        # Driver becomes available again after completing the ride.
         driver = db.query(User).filter(
             User.id == current_user.id
         ).first()
@@ -233,5 +251,10 @@ class RideService:
 
         db.commit()
         db.refresh(ride)
+
+        NotificationService.notify_passenger(
+            ride.passenger_id,
+            "Your ride has been completed."
+        )
 
         return ride
