@@ -6,6 +6,7 @@ from app.constants.ride_status import RideStatus
 from app.models.ride_request import RideRequest
 from app.models.user import User
 from app.services.notification_service import NotificationService
+from app.services.ride_guard_service import RideGuardService
 
 
 class GPSService:
@@ -19,6 +20,10 @@ class GPSService:
         driver: User,
         latitude: float,
         longitude: float,
+        accuracy: float | None = None,
+        speed: float | None = None,
+        heading: float | None = None,
+        timestamp: float | None = None,
     ) -> User:
         """
         Updates the driver's GPS location and broadcasts it
@@ -57,6 +62,18 @@ class GPSService:
         )
 
         if active_ride:
+
+            RideGuardService.record_gps_update(
+                db=db,
+                ride_id=active_ride.id,
+                driver_id=driver.id,
+                latitude=latitude,
+                longitude=longitude,
+                speed_kmh=(speed * 3.6 if speed is not None else None),
+                accuracy_meters=accuracy,
+                heading_degrees=heading,
+                device_timestamp=timestamp,
+            )
 
             NotificationService.send_driver_location(
                 passenger_id=active_ride.passenger_id,

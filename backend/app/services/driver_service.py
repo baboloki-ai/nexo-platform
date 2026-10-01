@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.constants.ride_offer_status import RideOfferStatus
@@ -7,7 +8,7 @@ from app.constants.ride_status import RideStatus
 from app.models.ride_offer import RideOffer
 from app.models.ride_request import RideRequest
 from app.models.user import User
-from app.services.dispatch_service import DispatchService
+from app.services.marketplace_service import MarketplaceService
 from app.services.notification_service import NotificationService
 
 
@@ -69,40 +70,20 @@ class DriverService:
         ride_id: int,
         driver_id: int
     ) -> RideRequest | None:
-
-        ride = (
-            db.query(RideRequest)
-            .filter(
-                RideRequest.id == ride_id,
-                RideRequest.accepted_driver_id == driver_id,
-                RideRequest.status == RideStatus.PENDING_DRIVER_ACCEPTANCE
-            )
-            .first()
-        )
-
-        if ride is None:
+        """
+        L3.0: driver accepts the current passenger offer as a marketplace
+        response. Does not assign the ride.
+        """
+        driver = db.query(User).filter(User.id == driver_id).first()
+        if driver is None:
             return None
-
-        ride.status = RideStatus.ACCEPTED
-
-        offer = (
-            db.query(RideOffer)
-            .filter(
-                RideOffer.ride_id == ride.id,
-                RideOffer.driver_id == driver_id,
-                RideOffer.status == RideOfferStatus.PENDING
-            )
-            .first()
+        return MarketplaceService.driver_respond(
+            db=db,
+            ride_id=ride_id,
+            current_user=driver,
+            response_type="accept_passenger_offer",
+            amount=None,
         )
-
-        if offer:
-            offer.status = RideOfferStatus.ACCEPTED
-            offer.responded_at = datetime.utcnow()
-
-        db.commit()
-        db.refresh(ride)
-
-        return ride
 
     @staticmethod
     def reject_ride(
@@ -110,51 +91,14 @@ class DriverService:
         ride_id: int,
         driver_id: int
     ) -> RideRequest | None:
-
-        ride = (
-            db.query(RideRequest)
-            .filter(
-                RideRequest.id == ride_id,
-                RideRequest.accepted_driver_id == driver_id,
-                RideRequest.status == RideStatus.PENDING_DRIVER_ACCEPTANCE
-            )
-            .first()
-        )
-
-        if ride is None:
+        """
+        L3.0: withdraw the driver's open marketplace response.
+        """
+        driver = db.query(User).filter(User.id == driver_id).first()
+        if driver is None or driver.role != "driver":
             return None
-
-        driver = (
-            db.query(User)
-            .filter(User.id == driver_id)
-            .first()
-        )
-
-        if driver:
-            driver.availability_status = "available"
-
-        offer = (
-            db.query(RideOffer)
-            .filter(
-                RideOffer.ride_id == ride.id,
-                RideOffer.driver_id == driver_id,
-                RideOffer.status == RideOfferStatus.PENDING
-            )
-            .first()
-        )
-
-        if offer:
-            offer.status = RideOfferStatus.REJECTED
-            offer.responded_at = datetime.utcnow()
-
-        ride.accepted_driver_id = None
-        ride.status = RideStatus.PENDING
-
-        db.commit()
-
-        ride = DispatchService.assign_driver(
+        return MarketplaceService.withdraw_response(
             db=db,
-            ride=ride
+            ride_id=ride_id,
+            current_user=driver,
         )
-
-        return ride

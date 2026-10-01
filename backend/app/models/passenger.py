@@ -23,5 +23,4 @@ class Passenger(Base):
     ride_requests = relationship(
         "RideRequest",
         back_populates="passenger",
-        cascade="all, delete-orphan"
     )

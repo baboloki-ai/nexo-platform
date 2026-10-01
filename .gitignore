@@ -179,3 +179,15 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+# NEXO local/generated artifacts
+App-output.txt
+LoginPage-output.txt
+backend.zip
+backend/-Uri
+backend/app/services/ride_service.py.bak
+backups/
+tatus --short

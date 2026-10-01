@@ -36,8 +36,16 @@ class ConnectionManager:
 
     def disconnect_driver(
         self,
-        driver_id: int
+        driver_id: int,
+        websocket: WebSocket | None = None,
     ):
+        # Only drop the slot if it still points at this socket (reconnect-safe).
+        current = self.driver_connections.get(driver_id)
+        if current is None:
+            return
+        if websocket is not None and current is not websocket:
+            return
+
         self.driver_connections.pop(driver_id, None)
 
         print("\n========== DRIVER DISCONNECTED ==========")
@@ -72,7 +80,7 @@ class ConnectionManager:
             print(f"❌ Failed sending to Driver {driver_id}")
             print(f"Exception      : {repr(e)}")
             print("Removing stale WebSocket connection...")
-            self.disconnect_driver(driver_id)
+            self.disconnect_driver(driver_id, websocket)
 
     # ==========================================================
     # Passenger Connections
@@ -94,8 +102,16 @@ class ConnectionManager:
 
     def disconnect_passenger(
         self,
-        passenger_id: int
+        passenger_id: int,
+        websocket: WebSocket | None = None,
     ):
+        # Only drop the slot if it still points at this socket (reconnect-safe).
+        current = self.passenger_connections.get(passenger_id)
+        if current is None:
+            return
+        if websocket is not None and current is not websocket:
+            return
+
         self.passenger_connections.pop(passenger_id, None)
 
         print("\n======= PASSENGER DISCONNECTED =======")
@@ -130,7 +146,7 @@ class ConnectionManager:
             print(f"❌ Failed sending to Passenger {passenger_id}")
             print(f"Exception        : {repr(e)}")
             print("Removing stale WebSocket connection...")
-            self.disconnect_passenger(passenger_id)
+            self.disconnect_passenger(passenger_id, websocket)
 
 
 manager = ConnectionManager()

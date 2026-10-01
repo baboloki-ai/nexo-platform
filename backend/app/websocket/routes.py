@@ -1,5 +1,12 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from sqlalchemy.orm import Session
 
+from app.database.dependencies import get_db
+from app.websocket.auth import (
+    authenticate_driver_socket,
+    authenticate_passenger_socket,
+    reject_websocket,
+)
 from app.websocket.manager import manager
 
 router = APIRouter(
@@ -14,8 +21,14 @@ router = APIRouter(
 @router.websocket("/ws/driver/{driver_id}")
 async def driver_socket(
     websocket: WebSocket,
-    driver_id: int
+    driver_id: int,
+    db: Session = Depends(get_db),
 ):
+    user = authenticate_driver_socket(websocket, db, driver_id)
+    if user is None:
+        await reject_websocket(websocket)
+        return
+
     await manager.connect_driver(
         driver_id,
         websocket
@@ -39,7 +52,7 @@ async def driver_socket(
 
     except WebSocketDisconnect:
 
-        manager.disconnect_driver(driver_id)
+        manager.disconnect_driver(driver_id, websocket)
 
 
 # ==========================================================
@@ -49,8 +62,14 @@ async def driver_socket(
 @router.websocket("/ws/passenger/{passenger_id}")
 async def passenger_socket(
     websocket: WebSocket,
-    passenger_id: int
+    passenger_id: int,
+    db: Session = Depends(get_db),
 ):
+    user = authenticate_passenger_socket(websocket, db, passenger_id)
+    if user is None:
+        await reject_websocket(websocket)
+        return
+
     await manager.connect_passenger(
         passenger_id,
         websocket
@@ -74,4 +93,4 @@ async def passenger_socket(
 
     except WebSocketDisconnect:
 
-        manager.disconnect_passenger(passenger_id)
+        manager.disconnect_passenger(passenger_id, websocket)

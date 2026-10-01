@@ -16,6 +16,18 @@ class User(Base):
     password = Column(String, nullable=False)
     role = Column(String, default="passenger")
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
+
+    # Future-safe; no document/photo upload in L1.
+    profile_photo_url = Column(String, nullable=True)
+
+    # Driver verification. Passengers leave this null.
+    # New drivers are set to pending at registration.
+    verification_status = Column(String, nullable=True)
 
     # ==========================
     # Driver Dispatch Fields
@@ -49,4 +61,16 @@ class User(Base):
     ride_offers = relationship(
         "RideOffer",
         back_populates="driver"
+    )
+
+    driver_responses = relationship(
+        "DriverResponse",
+        back_populates="driver"
+    )
+
+    wallet = relationship(
+        "DriverWallet",
+        back_populates="driver",
+        uselist=False,
+        lazy="noload",
     )

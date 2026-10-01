@@ -6,12 +6,7 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 
 from app.database.base import Base
-
-# Import all models so Alembic can detect them
-from app.models.user import User
-from app.models.passenger import Passenger
-from app.models.vehicle import Vehicle
-from app.models.ride_request import RideRequest
+import app.models  # noqa: F401  — register all models on Base.metadata
 
 # Load .env
 load_dotenv()

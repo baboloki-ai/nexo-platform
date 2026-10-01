@@ -1,6 +1,9 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from datetime import datetime
+
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
+from app.constants.verification import VerificationStatus
 from app.database.base import Base
 
 
@@ -25,6 +28,17 @@ class Vehicle(Base):
         nullable=False
     )
     vehicle_type = Column(String, nullable=False)
+    verification_status = Column(
+        String,
+        nullable=False,
+        default=VerificationStatus.PENDING,
+    )
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
 
     driver = relationship(
         "User",

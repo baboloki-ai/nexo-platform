@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.constants.verification import VerificationStatus
 from app.database.dependencies import get_db
 from app.models.user import User
 from app.models.vehicle import Vehicle
@@ -11,11 +12,11 @@ from app.schemas.vehicle import (
     VehicleResponse,
     VehicleUpdate,
 )
-from app.utils.dependencies import get_current_user
+from app.utils.dependencies import require_driver
 
 router = APIRouter(
     prefix="/vehicles",
-    tags=["Vehicles"]
+    tags=["Vehicles"],
 )
 
 
@@ -23,7 +24,7 @@ router = APIRouter(
 def create_vehicle(
     vehicle: VehicleCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_driver),
 ):
     new_vehicle = Vehicle(
         driver_id=current_user.id,
@@ -33,6 +34,7 @@ def create_vehicle(
         color=vehicle.color,
         registration_number=vehicle.registration_number,
         vehicle_type=vehicle.vehicle_type,
+        verification_status=VerificationStatus.PENDING,
     )
 
     db.add(new_vehicle)
@@ -42,10 +44,11 @@ def create_vehicle(
     return new_vehicle
 
 
+@router.get("/", response_model=List[VehicleResponse])
 @router.get("/my", response_model=List[VehicleResponse])
 def get_my_vehicles(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_driver),
 ):
     vehicles = (
         db.query(Vehicle)
@@ -60,7 +63,7 @@ def get_my_vehicles(
 def get_vehicle(
     vehicle_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_driver),
 ):
     vehicle = (
         db.query(Vehicle)
@@ -85,7 +88,7 @@ def update_vehicle(
     vehicle_id: int,
     update: VehicleUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_driver),
 ):
     vehicle = (
         db.query(Vehicle)
@@ -119,7 +122,7 @@ def update_vehicle(
 def delete_vehicle(
     vehicle_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_driver),
 ):
     vehicle = (
         db.query(Vehicle)

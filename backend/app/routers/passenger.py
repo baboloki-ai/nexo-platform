@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database.dependencies import get_db
 from app.models.passenger import Passenger
+from app.models.ride_request import RideRequest
 from app.models.user import User
 from app.schemas.passenger import (
     PassengerCreate,
@@ -128,6 +129,17 @@ def delete_passenger(
         raise HTTPException(
             status_code=404,
             detail="Passenger not found",
+        )
+
+    ride_history = (
+        db.query(RideRequest)
+        .filter(RideRequest.passenger_id == passenger.id)
+        .first()
+    )
+    if ride_history is not None:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete passenger profile with ride history.",
         )
 
     db.delete(passenger)

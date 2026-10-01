@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -19,6 +21,10 @@ class VehicleUpdate(BaseModel):
     vehicle_type: str
 
 
+class VehicleVerificationUpdate(BaseModel):
+    status: str
+
+
 class VehicleResponse(BaseModel):
     id: int
     driver_id: int
@@ -28,6 +34,9 @@ class VehicleResponse(BaseModel):
     color: str
     registration_number: str
     vehicle_type: str
+    verification_status: str
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     class Config:
         from_attributes = True
