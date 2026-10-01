@@ -1,5 +1,7 @@
 import { getToken, notifyUnauthorized } from '../auth/session'
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+
 export class ApiError extends Error {
   status: number
 
@@ -85,7 +87,7 @@ export async function apiRequest<T>(
 
   let response: Response
   try {
-    response = await fetch(path, { ...options, headers })
+    response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers })
   } catch {
     throw new ApiError(
       'Unable to reach NEXO. Check your connection and try again.',
@@ -122,3 +124,4 @@ export async function apiRequest<T>(
 
   return JSON.parse(text) as T
 }
+

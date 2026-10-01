@@ -23,8 +23,10 @@ export function connectNexoSocket(
   token: string,
   handlers: SocketHandlers,
 ): SocketHandle {
+  const configuredWsUrl = (import.meta.env.VITE_WS_URL ?? '').replace(/\/$/, '')
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const url = `${protocol}//${window.location.host}${path}?token=${encodeURIComponent(token)}`
+  const baseUrl = configuredWsUrl || `${protocol}://${window.location.host}`
+  const url = `${baseUrl}${path}?token=${encodeURIComponent(token)}`
 
   let closedByUser = false
   let socket: WebSocket | null = null
