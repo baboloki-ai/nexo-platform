@@ -3,7 +3,7 @@ import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-
+from fastapi.middleware.cors import CORSMiddleware
 from app.config import INTERNAL_VERIFY_SECRET, RIDE_OFFER_EXPIRY_SWEEP_INTERVAL_SECONDS
 from app.database.database import SessionLocal
 import app.models  # noqa: F401  — register all models on Base.metadata
@@ -116,6 +116,17 @@ app = FastAPI(
     title="NEXO Ride API",
     version="3.0.0",
     lifespan=lifespan,
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://fearless-cooperation-production-3702.up.railway.app",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ==========================================================
