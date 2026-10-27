@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -23,6 +24,8 @@ from app.services.password_reset_service import (
     consume_password_reset_token,
 )
 from app.services.password_reset_email import send_password_reset_email
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/users",
@@ -130,6 +133,7 @@ def forgot_password(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("Password reset email delivery failed")
         raise HTTPException(
             status_code=503,
             detail="Password reset email service is temporarily unavailable.",
